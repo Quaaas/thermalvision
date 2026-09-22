@@ -6,6 +6,14 @@ namespace ThermalViewer.Core.Tests;
 
 public class FrameSplitterTests
 {
+    [Theory]
+    [InlineData(ThermalFrameFormat.Image256X194, 99_328)]
+    [InlineData(ThermalFrameFormat.ImageWithRawTemperature256X386, 197_632)]
+    public void FrameSizeInBytes_MatchesUvcFrameBufferSize(ThermalFrameFormat format, int expected)
+    {
+        Assert.Equal(expected, FrameSplitter.FrameSizeInBytes(format));
+    }
+
     [Fact]
     public void Split_ImageOnlyFormat_ThrowsOnWrongBufferSize()
     {
@@ -56,5 +64,14 @@ public class TemperatureDecoderTests
         double higher = TemperatureDecoder.ToCelsius(2000);
 
         Assert.True(higher > lower);
+    }
+
+    [Theory]
+    [InlineData(17482, 0.0)] // 273.15 K * 64 = 17481.6
+    [InlineData(19082, 25.0)] // 298.15 K * 64 = 19081.6
+    [InlineData(23882, 100.0)] // 373.15 K * 64 = 23881.6
+    public void ToCelsius_UsesOneSixtyFourthKelvinUnits(int raw, double expectedCelsius)
+    {
+        Assert.Equal(expectedCelsius, TemperatureDecoder.ToCelsius((ushort)raw), precision: 1);
     }
 }

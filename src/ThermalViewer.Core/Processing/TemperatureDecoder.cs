@@ -3,24 +3,21 @@ namespace ThermalViewer.Core.Processing;
 /// <summary>
 /// Converts raw 16-bit sensor values from the temperature block into degrees Celsius.
 ///
-/// WARNING: the actual conversion formula (scale, offset, possibly a calibration register)
-/// for this camera is NOT yet verified (see "Open next steps" in the project status
-/// document). The current placeholder assumes a linear scale with a fixed factor/offset,
-/// as seen in several InfiRay P2 Pro clones, and must be calibrated against real
-/// measurements once raw data from the device is available.
+/// Per the P3 reverse-engineering notes (same OEM family) the raw values are in 1/64 Kelvin:
+/// °C = raw / 64 − 273.15. Still to be verified on our camera against a reference
+/// measurement (e.g. skin ≈ 33 °C, ice water 0 °C, boiling water ≈ 100 °C).
+/// Emissivity correction is not applied here.
 /// </summary>
 public static class TemperatureDecoder
 {
-    // TODO(calibration): placeholder values, verify against a reference measurement
-    // (e.g. water bath + reference thermometer).
-    private const double PlaceholderScale = 0.04; // °C per LSB
-    private const double PlaceholderOffsetCelsius = -273.15;
+    private const double RawUnitsPerKelvin = 64.0;
+    private const double KelvinToCelsiusOffset = -273.15;
 
     /// <summary>
     /// Converts a single raw 16-bit sensor value into degrees Celsius.
     /// </summary>
     public static double ToCelsius(ushort rawValue) =>
-        rawValue * PlaceholderScale + PlaceholderOffsetCelsius;
+        rawValue / RawUnitsPerKelvin + KelvinToCelsiusOffset;
 
     /// <summary>
     /// Converts an entire raw data block into degrees Celsius, element by element.

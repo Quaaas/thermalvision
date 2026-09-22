@@ -10,7 +10,8 @@ namespace ThermalViewer.Camera;
 /// Reverse-engineering reference: <see href="https://github.com/jvdillon/p3-ir-camera/blob/main/P3_PROTOCOL.md"/>
 /// (documented for the sibling camera P3, VID:PID 3474:45a2).
 /// Verified on our own camera (PID 45e1): the shutter command via <see cref="VantrueRequest.Command"/>.
-/// Everything else is still unverified.
+/// The register reads (model, versions, serial) use the P3 byte sequences; still to be
+/// confirmed on PID 45e1.
 ///
 /// Command byte layout (18 bytes):
 /// <code>
@@ -28,15 +29,19 @@ public static class VantrueProtocol
     public const int CommandLength = 18;
     public const int ResponseLengthOffset = 12;
 
+    /// <summary>Register 0x01, 30 bytes: model name (P3 reference: "read_name").</summary>
     public static readonly VantrueCommand ReadModel =
-        VantrueCommand.FromHex("01364300000000000000000000000000cd0b");
+        VantrueCommand.FromHex("0101810001000000000000001e0000004f90");
 
+    /// <summary>Register 0x02, 12 bytes.</summary>
     public static readonly VantrueCommand ReadFirmwareVersion =
         VantrueCommand.FromHex("0101810002000000000000000c0000001f63");
 
+    /// <summary>Register 0x07, 64 bytes.</summary>
     public static readonly VantrueCommand ReadSerialNumber =
         VantrueCommand.FromHex("01018100070000000000000040000000104c");
 
+    /// <summary>Register 0x0a, 64 bytes.</summary>
     public static readonly VantrueCommand ReadHardwareVersion =
         VantrueCommand.FromHex("010181000a00000000000000400000001959");
 
@@ -46,6 +51,14 @@ public static class VantrueProtocol
     /// </summary>
     public static readonly VantrueCommand Shutter =
         VantrueCommand.FromHex("01364300000000000000000000000000cd0b");
+
+    /// <summary>
+    /// Vendor "start stream" command of the manufacturer tool (1-byte response: 0x01 = started,
+    /// 0x35 = restarted). NOT used by <see cref="UsbCameraDevice"/>, which starts streaming the
+    /// standard UVC way; kept for experiments in case the standard way turns out insufficient.
+    /// </summary>
+    public static readonly VantrueCommand StartStream =
+        VantrueCommand.FromHex("012f81000000000000000000010000004930");
 
     /// <summary>
     /// Builds a command from command type, parameter, register ID and expected response
