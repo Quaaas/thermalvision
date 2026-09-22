@@ -1,7 +1,11 @@
+using System.Runtime.InteropServices;
+using Avalonia.Media.Imaging;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using ThermalViewer.App.Rendering;
 using ThermalViewer.Camera;
+using ThermalViewer.Core.Imaging;
 using ThermalViewer.Core.Models;
 using ThermalViewer.Core.Processing;
 
@@ -13,9 +17,20 @@ public partial class MainWindowViewModel : ViewModelBase
     private const int CenterPixelIndex =
         (FrameSplitter.NativeImageHeight / 2 * FrameSplitter.Width) + (FrameSplitter.Width / 2);
 
+    private const int ImageWidth = FrameSplitter.Width;
+    private const int ImageHeight = FrameSplitter.NativeImageHeight;
+
     private readonly DispatcherTimer _statisticsTimer;
     private IThermalCameraSource? _camera;
-    private volatile string _lastFrameSummary = string.Empty;
+
+    // Live image pipeline: colorized on the camera's dispatcher thread into _pixels, then
+    // copied into a bitmap on the UI thread. _renderPending drops frames while the UI thread
+    // hasn't picked up the previous one yet (no backlog, and _pixels is never written while
+    // the UI thread reads it).
+    private ThermalBitmapPresenter? _presenter;
+    private byte[] _pixels = [];
+    private AutoTemperatureRange _colorRange = new();
+    private int _renderPending;
 
     public MainWindowViewModel()
     {
@@ -28,6 +43,12 @@ public partial class MainWindowViewModel : ViewModelBase
 
     [ObservableProperty]
     private string _statusText = "Camera not connected.";
+
+    [ObservableProperty]
+    private WriteableBitmap? _thermalImage;
+
+    [ObservableProperty]
+    private string _temperatureText = string.Empty;
 
     [ObservableProperty]
     [NotifyCanExecuteChangedFor(nameof(ConnectCommand))]
@@ -107,7 +128,11 @@ public partial class MainWindowViewModel : ViewModelBase
             return;
         }
 
-        _lastFrameSummary = string.Empty;
+        _presenter ??= new ThermalBitmapPresenter(ImageWidth, ImageHeight);
+        _pixels = new byte[_presenter.BufferSize];
+        _colorRange = new AutoTemperatureRange();
+        Volatile.Write(ref _renderPending, 0);
+
         _camera.FrameReceived += OnFrameReceived;
         try
         {
@@ -153,14 +178,45 @@ public partial class MainWindowViewModel : ViewModelBase
         }
     }
 
-    /// <summary>Runs on the camera's dispatcher thread — only store a summary, no UI access.</summary>
+    /// <summary>Runs on the camera's dispatcher thread — colorize here, touch UI state only via the dispatcher.</summary>
     private void OnFrameReceived(object? sender, ThermalFrame frame)
     {
-        if (frame.RawTemperatureData is { } raw)
+        if (frame.RawTemperatureData is not { } rawData)
         {
-            ushort center = raw.Span[CenterPixelIndex];
-            _lastFrameSummary = $"center {TemperatureDecoder.ToCelsius(center):F1} °C (raw {center})";
+            return;
         }
+
+        if (Interlocked.CompareExchange(ref _renderPending, 1, 0) != 0)
+        {
+            return; // UI thread still busy with the previous frame
+        }
+
+        ReadOnlySpan<ushort> raw = rawData.Span;
+        RawExtremes extremes = ThermalImageRenderer.FindExtremes(raw);
+        (double low, double high) = _colorRange.Update(extremes.Min, extremes.Max);
+        ThermalImageRenderer.Render(raw, low, high, ThermalPalettes.Ironbow, MemoryMarshal.Cast<byte, uint>(_pixels.AsSpan()));
+
+        string text =
+            $"Min {TemperatureDecoder.ToCelsius(extremes.Min):F1} °C   " +
+            $"Max {TemperatureDecoder.ToCelsius(extremes.Max):F1} °C   " +
+            $"Center {TemperatureDecoder.ToCelsius(raw[CenterPixelIndex]):F1} °C";
+        byte[] pixels = _pixels;
+
+        Dispatcher.UIThread.Post(() =>
+        {
+            try
+            {
+                if (_presenter is not null)
+                {
+                    ThermalImage = _presenter.Present(pixels);
+                    TemperatureText = text;
+                }
+            }
+            finally
+            {
+                Volatile.Write(ref _renderPending, 0);
+            }
+        });
     }
 
     private void UpdateStreamingStatus()
@@ -171,8 +227,6 @@ public partial class MainWindowViewModel : ViewModelBase
             return;
         }
 
-        StatusText = string.IsNullOrEmpty(_lastFrameSummary)
-            ? $"Streaming: {statistics}"
-            : $"Streaming: {_lastFrameSummary} — {statistics}";
+        StatusText = $"Streaming: {statistics}";
     }
 }

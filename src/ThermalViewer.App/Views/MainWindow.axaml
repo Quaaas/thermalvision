@@ -19,13 +19,28 @@
         <TextBlock DockPanel.Dock="Bottom" Text="{Binding StatusText}" Margin="0,12,0,0" Opacity="0.8"
                    TextWrapping="Wrap" />
 
-        <!-- Placeholder for the live stream view (next step: an Image control with a
-             WriteableBitmap, fed from IThermalCameraSource.FrameReceived). Until then the
-             status line shows frame counters and the center-pixel temperature. -->
-        <Border Background="#1a1a1a" CornerRadius="4">
-            <TextBlock Text="Live view coming soon — streaming status is shown below"
-                       HorizontalAlignment="Center" VerticalAlignment="Center"
-                       Foreground="Gray" />
+        <!-- Live thermal image: false-color rendering of the raw temperature block, scaled
+             to fit. The crosshair marks the pixel shown as "Center". -->
+        <Border Background="#1a1a1a" CornerRadius="4" ClipToBounds="True">
+            <Grid>
+                <TextBlock Text="Connect the camera and start streaming to see the live image"
+                           HorizontalAlignment="Center" VerticalAlignment="Center" Foreground="Gray"
+                           IsVisible="{Binding ThermalImage, Converter={x:Static ObjectConverters.IsNull}}" />
+
+                <Image Source="{Binding ThermalImage}" Stretch="Uniform"
+                       RenderOptions.BitmapInterpolationMode="HighQuality" />
+
+                <Path Data="M 0,10 L 7,10 M 13,10 L 20,10 M 10,0 L 10,7 M 10,13 L 10,20"
+                      Stroke="White" StrokeThickness="1.5"
+                      HorizontalAlignment="Center" VerticalAlignment="Center"
+                      IsVisible="{Binding ThermalImage, Converter={x:Static ObjectConverters.IsNotNull}}" />
+
+                <Border Background="#99000000" CornerRadius="3" Padding="8,4" Margin="8"
+                        HorizontalAlignment="Left" VerticalAlignment="Top"
+                        IsVisible="{Binding ThermalImage, Converter={x:Static ObjectConverters.IsNotNull}}">
+                    <TextBlock Text="{Binding TemperatureText}" Foreground="White" FontFamily="monospace" />
+                </Border>
+            </Grid>
         </Border>
 
     </DockPanel>

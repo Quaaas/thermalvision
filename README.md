@@ -97,8 +97,8 @@ driver for the device (VID `3474`, PID `45e1`) — not the standard UVC driver.
    frame size/format index.
 2. Verify the dual-frame layout and the 1/64 K temperature formula with real frames
    (dump one raw frame as a test fixture; sanity check: skin ≈ 33 °C).
-3. Live image view in `MainWindow.axaml` (Image + WriteableBitmap, false-color LUT,
-   min/max/spot temperature).
+3. Live image: implemented (ironbow false color with smoothed auto range, min/max/center
+   overlay). Next: palette switch, manual range, markers at min/max, orientation check.
 4. Windows: WinUSB + libusb isochronous support.
 5. CI (GitHub Actions: build + test), pin package versions.
 6. Later: semantic segmentation on the thermal data.
