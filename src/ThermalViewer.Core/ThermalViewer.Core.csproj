@@ -1,0 +1,11 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Pure domain/processing project: no platform, USB, or UI dependencies.
+       Must run unmodified on Linux and Windows (TargetFramework/Nullable etc. come
+       from Directory.Build.props). -->
+  <PropertyGroup>
+    <AssemblyName>ThermalViewer.Core</AssemblyName>
+    <RootNamespace>ThermalViewer.Core</RootNamespace>
+  </PropertyGroup>
+
+</Project>

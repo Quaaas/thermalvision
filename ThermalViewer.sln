@@ -1,0 +1,50 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.31903.59
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{06E974FD-1354-402A-81DC-81D234AB9A88}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ThermalViewer.Core", "src\ThermalViewer.Core\ThermalViewer.Core.csproj", "{0A26655B-6BCB-4793-B807-12552C3D5250}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ThermalViewer.Camera", "src\ThermalViewer.Camera\ThermalViewer.Camera.csproj", "{E805403C-6411-4B9C-9B80-F1635AC0B7CF}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ThermalViewer.App", "src\ThermalViewer.App\ThermalViewer.App.csproj", "{952A709D-753D-46E7-9483-93F233F6CE42}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{666D4CD1-FB87-497D-9364-08555696DD1A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ThermalViewer.Core.Tests", "tests\ThermalViewer.Core.Tests\ThermalViewer.Core.Tests.csproj", "{7CE3C272-0AC9-47B5-B781-5C3BD5AC32D7}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{0A26655B-6BCB-4793-B807-12552C3D5250}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{0A26655B-6BCB-4793-B807-12552C3D5250}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{0A26655B-6BCB-4793-B807-12552C3D5250}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{0A26655B-6BCB-4793-B807-12552C3D5250}.Release|Any CPU.Build.0 = Release|Any CPU
+		{E805403C-6411-4B9C-9B80-F1635AC0B7CF}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{E805403C-6411-4B9C-9B80-F1635AC0B7CF}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{E805403C-6411-4B9C-9B80-F1635AC0B7CF}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{E805403C-6411-4B9C-9B80-F1635AC0B7CF}.Release|Any CPU.Build.0 = Release|Any CPU
+		{952A709D-753D-46E7-9483-93F233F6CE42}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{952A709D-753D-46E7-9483-93F233F6CE42}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{952A709D-753D-46E7-9483-93F233F6CE42}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{952A709D-753D-46E7-9483-93F233F6CE42}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7CE3C272-0AC9-47B5-B781-5C3BD5AC32D7}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7CE3C272-0AC9-47B5-B781-5C3BD5AC32D7}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7CE3C272-0AC9-47B5-B781-5C3BD5AC32D7}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7CE3C272-0AC9-47B5-B781-5C3BD5AC32D7}.Release|Any CPU.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{0A26655B-6BCB-4793-B807-12552C3D5250} = {06E974FD-1354-402A-81DC-81D234AB9A88}
+		{E805403C-6411-4B9C-9B80-F1635AC0B7CF} = {06E974FD-1354-402A-81DC-81D234AB9A88}
+		{952A709D-753D-46E7-9483-93F233F6CE42} = {06E974FD-1354-402A-81DC-81D234AB9A88}
+		{7CE3C272-0AC9-47B5-B781-5C3BD5AC32D7} = {666D4CD1-FB87-497D-9364-08555696DD1A}
+	EndGlobalSection
+EndGlobal

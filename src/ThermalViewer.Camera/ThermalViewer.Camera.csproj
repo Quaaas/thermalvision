@@ -1,0 +1,23 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <!-- Camera I/O: USB control transfers and isochronous video streaming.
+       LibUsbDotNet uses libusb as its backend, so it runs unmodified on Linux and Windows;
+       on Windows a WinUSB driver (via Zadig) is still needed per device, see README. -->
+  <PropertyGroup>
+    <AssemblyName>ThermalViewer.Camera</AssemblyName>
+    <RootNamespace>ThermalViewer.Camera</RootNamespace>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="LibUsbDotNet" Version="3.0.110-alpha" />
+    <!-- Optional image/video processing (e.g. demosaicing, false-color mapping, later
+         semantic segmentation). Requires an additional runtime package per platform, see README:
+         OpenCvSharp4.runtime.ubuntu.22.04-x64 (Linux) resp. OpenCvSharp4.runtime.win (Windows). -->
+    <PackageReference Include="OpenCvSharp4" Version="4.9.0.20240103" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\ThermalViewer.Core\ThermalViewer.Core.csproj" />
+  </ItemGroup>
+
+</Project>

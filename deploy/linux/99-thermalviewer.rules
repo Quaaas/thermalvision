@@ -1,0 +1,12 @@
+# udev rule so the Vantrue POWER TS1 (VID:PID 3474:45e1) can be accessed via libusb
+# without root privileges.
+#
+# Install:
+#   sudo cp 99-thermalviewer.rules /etc/udev/rules.d/
+#   sudo udevadm control --reload-rules
+#   sudo udevadm trigger
+#
+# Then re-plug the camera. Members of the "plugdev" group (or a dedicated group of your
+# choice) will get read/write access to the device.
+
+SUBSYSTEM=="usb", ATTR{idVendor}=="3474", ATTR{idProduct}=="45e1", MODE="0666", GROUP="plugdev", TAG+="uaccess"

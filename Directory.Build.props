@@ -1,0 +1,21 @@
+<Project>
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+    <LangVersion>latest</LangVersion>
+    <Authors>Sebastian Gesslein</Authors>
+    <Company>ThermalViewer</Company>
+    <NeutralLanguage>en</NeutralLanguage>
+
+    <!-- Cross-platform: no Windows-only targeting, no WPF/WinForms dependencies.
+         RuntimeIdentifiers are deliberately NOT set here globally (that would require
+         runtime packs for every RID on every build); pass them per publish instead,
+         e.g. "dotnet publish src/ThermalViewer.App -r linux-x64 -p:SelfContained=true"
+         or "-r win-x64". -->
+
+    <WarningsAsErrors>nullable</WarningsAsErrors>
+    <EnableNETAnalyzers>true</EnableNETAnalyzers>
+    <AnalysisLevel>latest</AnalysisLevel>
+  </PropertyGroup>
+</Project>

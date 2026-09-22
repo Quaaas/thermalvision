@@ -1,0 +1,29 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:ThermalViewer.App.ViewModels"
+        x:Class="ThermalViewer.App.Views.MainWindow"
+        x:DataType="vm:MainWindowViewModel"
+        Title="ThermalViewer"
+        Width="900" Height="640"
+        MinWidth="480" MinHeight="360">
+
+    <DockPanel Margin="16">
+
+        <StackPanel DockPanel.Dock="Top" Orientation="Horizontal" Spacing="8" Margin="0,0,0,12">
+            <Button Content="Connect my camera" Command="{Binding ConnectCommand}" />
+            <Button Content="Shutter (calibrate)" Command="{Binding TriggerShutterCalibrationCommand}" />
+        </StackPanel>
+
+        <TextBlock DockPanel.Dock="Bottom" Text="{Binding StatusText}" Margin="0,12,0,0" Opacity="0.8" />
+
+        <!-- Placeholder for the live stream view (next step: an Image control with a
+             WriteableBitmap, fed from IThermalCameraSource.FrameReceived). -->
+        <Border Background="#1a1a1a" CornerRadius="4">
+            <TextBlock Text="Live view coming maybe soon (see TODOs in UsbCameraDevice.StartStreamingAsync)"
+                       HorizontalAlignment="Center" VerticalAlignment="Center"
+                       Foreground="Gray" />
+        </Border>
+
+    </DockPanel>
+
+</Window>
