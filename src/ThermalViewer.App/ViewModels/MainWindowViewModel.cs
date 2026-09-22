@@ -8,6 +8,10 @@ namespace ThermalViewer.App.ViewModels;
 public partial class MainWindowViewModel : ViewModelBase
 {
     [ObservableProperty]
+    private CameraInfo? _cameraInfo;
+
+    [ObservableProperty]
+    [NotifyCanExecuteChangedFor(nameof(TriggerShutterCalibrationCommand))]
     private string _statusText = "Camera not connected.";
 
     [ObservableProperty]
@@ -24,10 +28,29 @@ public partial class MainWindowViewModel : ViewModelBase
             await _camera.OpenAsync();
             IsConnected = true;
             StatusText = $"Connected to {CameraDescriptor.VantruePowerTs1}.";
+
         }
         catch (Exception ex)
         {
+            if (_camera is not null)
+            {
+                await _camera.DisposeAsync();
+                _camera = null;
+            }
+
             StatusText = $"Connection failed: {ex.Message}";
+            return;
+        }
+            
+        try
+        {
+            CameraInfo = await _camera.ReadDeviceInfoAsync();
+            StatusText = $"Connected: {CameraInfo}";
+        }
+        catch (Exception ex)
+        {
+            CameraInfo = null;
+            StatusText = $"Connected, but device info not readable: {ex.Message}";
         }
     }
 

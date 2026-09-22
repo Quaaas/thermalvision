@@ -24,7 +24,14 @@ public sealed class UsbCameraDevice : IThermalCameraSource
     private const byte IsochronousStreamingAlternateSetting = 1;
     private const byte IsochronousEndpointAddress = 0x81;
 
+    // bmRequestType for the vendor protocol, composed from named flags instead of magic numbers.
+    private const byte VendorOutToInterface =
+        (byte)(UsbCtrlFlags.Direction_Out | UsbCtrlFlags.RequestType_Vendor | UsbCtrlFlags.Recipient_Interface); // 0x41
+    private const byte VendorInFromInterface =
+        (byte)(UsbCtrlFlags.Direction_In | UsbCtrlFlags.RequestType_Vendor | UsbCtrlFlags.Recipient_Interface); // 0xC1
+
     private readonly CameraDescriptor _descriptor;
+    private readonly object _commandLock = new();
     private UsbContext? _context;
     private UsbDevice? _device;
     private CancellationTokenSource? _streamingCts;
@@ -70,55 +77,100 @@ public sealed class UsbCameraDevice : IThermalCameraSource
     }
 
     /// <summary>
-    /// Sends a <see cref="VantrueProtocol"/> command as a USB control transfer and returns
-    /// the response (length per <paramref name="responseLength"/>).
+    /// Sends a <see cref="VantrueCommand"/> and returns its response data (empty if the
+    /// command has none). Follows the handshake of the manufacturer tool: write command,
+    /// check status, and — only if a response is expected — read it and check status again.
     /// </summary>
-    public byte[] SendControlCommand(byte[] command, ushort responseLength)
+    public byte[] SendCommand(VantrueCommand command)
     {
-        if (_device is null)
+        lock (_commandLock)
         {
-            throw new InvalidOperationException($"{nameof(OpenAsync)} must be called first.");
+            WriteVendorRequest(VantrueRequest.Command, command.ToArray());
+            ExpectStatus(VantrueStatus.CommandReceived, command);
+
+            if (command.ResponseLength == 0)
+            {
+                return [];
+            }
+
+            byte[] response = ReadVendorRequest(VantrueRequest.Response, command.ResponseLength);
+            ExpectStatus(VantrueStatus.CommandReceived | VantrueStatus.Completed, command);
+            return response;
         }
-
-        if (command.Length != VantrueProtocol.CommandLength)
-        {
-            throw new ArgumentException($"Command must be {VantrueProtocol.CommandLength} bytes long.", nameof(command));
-        }
-
-        // TODO: verify bmRequestType/bRequest/wValue/wIndex against a real USB capture
-        // (Wireshark/usbmon) — the values below are a placeholder for a vendor control transfer.
-        // UsbSetupPacket constructor: (byte bRequestType, byte bRequest, int wValue, int wIndex, int wLength) —
-        // positional parameters, no named "requestType" etc. (see LibUsbDotNet.Main.UsbSetupPacket).
-        var setupPacket = new UsbSetupPacket(
-            0x21, // bRequestType: vendor, host-to-device, interface
-            0x09, // bRequest
-            0x0300, // wValue
-            VideoControlInterface, // wIndex
-            command.Length); // wLength
-
-        // ControlTransfer expects the setup packet by value, not by ref.
-        _device.ControlTransfer(setupPacket, command, 0, command.Length);
-
-        var response = new byte[responseLength];
-        if (responseLength > 0)
-        {
-            var readSetupPacket = new UsbSetupPacket(
-                0xA1, // bRequestType: vendor, device-to-host, interface
-                0x09, // bRequest
-                0x0300, // wValue
-                VideoControlInterface, // wIndex
-                responseLength); // wLength
-            _device.ControlTransfer(readSetupPacket, response, 0, response.Length);
-        }
-
-        return response;
     }
 
     public Task TriggerShutterCalibrationAsync(CancellationToken cancellationToken = default)
     {
-        SendControlCommand(VantrueProtocol.ShutterCommand, responseLength: 0);
+        SendCommand(VantrueProtocol.Shutter);
         return Task.CompletedTask;
     }
+
+    public Task<CameraInfo> ReadDeviceInfoAsync(CancellationToken cancellationToken = default)
+    {
+        // The USB transfers block, so run them off the UI thread.
+        return Task.Run(() => ReadDeviceInfo(cancellationToken), cancellationToken);
+    }
+
+    private CameraInfo ReadDeviceInfo(CancellationToken cancellationToken)
+    {
+        string model = ReadString(VantrueProtocol.ReadModel, cancellationToken);
+        string firmwareVersion = ReadString(VantrueProtocol.ReadFirmwareVersion, cancellationToken);
+        string hardwareVersion = ReadString(VantrueProtocol.ReadHardwareVersion, cancellationToken);
+        string serialNumber = ReadString(VantrueProtocol.ReadSerialNumber, cancellationToken);
+
+        Console.Write($"{model} {firmwareVersion} {hardwareVersion} {serialNumber}");
+
+        return new CameraInfo(model, firmwareVersion, hardwareVersion, serialNumber);
+    }
+
+    private string ReadString(VantrueCommand command, CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        byte[] response = SendCommand(command);
+        return VantrueProtocol.DecodeString(response);
+    }
+
+
+    /// <summary>Reads the status register and checks that all <paramref name="required"/> bits are set.</summary>
+    private void ExpectStatus(VantrueStatus required, VantrueCommand command)
+    {
+        var actual = (VantrueStatus)ReadVendorRequest(VantrueRequest.Status, 1)[0];
+        if ((actual & required) != required)
+        {
+            throw new InvalidDataException(
+                $"Unexpected status 0x{(byte)actual:X2} after command {command} " +
+                $"(required bits: {required} = 0x{(byte)required:X2}).");
+        }
+    }
+
+    // --- USB primitives: the only place that knows about setup packets. -------------------
+
+    private void WriteVendorRequest(VantrueRequest request, byte[] data)
+    {
+        var setupPacket = new UsbSetupPacket(VendorOutToInterface, (byte)request, 0, VideoControlInterface, data.Length);
+        int transferred = OpenDevice.ControlTransfer(setupPacket, data, 0, data.Length);
+        EnsureComplete(request, transferred, data.Length);
+    }
+
+    private byte[] ReadVendorRequest(VantrueRequest request, int length)
+    {
+        var buffer = new byte[length];
+        var setupPacket = new UsbSetupPacket(VendorInFromInterface, (byte)request, 0, VideoControlInterface, length);
+        int transferred = OpenDevice.ControlTransfer(setupPacket, buffer, 0, length);
+        EnsureComplete(request, transferred, length);
+        return buffer;
+    }
+
+    private static void EnsureComplete(VantrueRequest request, int transferred, int expected)
+    {
+        if (transferred != expected)
+        {
+            throw new IOException($"Short control transfer for {request}: {transferred} of {expected} bytes.");
+        }
+    }
+
+    private UsbDevice OpenDevice =>
+        _device ?? throw new InvalidOperationException($"{nameof(OpenAsync)} must be called first.");
 
     public Task StartStreamingAsync(ThermalFrameFormat format, CancellationToken cancellationToken = default)
     {

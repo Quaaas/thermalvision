@@ -21,4 +21,7 @@ public interface IThermalCameraSource : IAsyncDisposable
 
     /// <summary>Triggers the camera's shutter/calibration function (NUC calibration, audible "click").</summary>
     Task TriggerShutterCalibrationAsync(CancellationToken cancellationToken = default);
+
+    /// <summary> Read Camera Info</summary>
+    Task<CameraInfo> ReadDeviceInfoAsync(CancellationToken cancellationToken = default);
 }
